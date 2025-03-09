@@ -133,7 +133,9 @@ public class EnumTest {
    * Gets or Sets enumInteger
    */
   public enum EnumIntegerEnum {
-    NUMBER_1(Integer.valueOf(1));
+    NUMBER_1(Integer.valueOf(1)),
+
+    NUMBER_MINUS_1(Integer.valueOf(-1));
 
     private Integer value;
 
@@ -158,13 +160,13 @@ public class EnumTest {
           return b;
         }
       }
-      return null;
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
   }
 
   public static final String JSON_PROPERTY_ENUM_INTEGER = "enum_integer";
   @jakarta.annotation.Nullable
-  private JsonNullable<EnumIntegerEnum> enumInteger = JsonNullable.<EnumIntegerEnum>undefined();
+  private EnumIntegerEnum enumInteger;
 
   /**
    * Gets or Sets enumNumber
@@ -275,7 +277,7 @@ public class EnumTest {
   }
 
   public EnumTest enumInteger(@jakarta.annotation.Nullable EnumIntegerEnum enumInteger) {
-    this.enumInteger = JsonNullable.<EnumIntegerEnum>of(enumInteger);
+    this.enumInteger = enumInteger;
     
     return this;
   }
@@ -285,26 +287,15 @@ public class EnumTest {
    * @return enumInteger
    */
   @jakarta.annotation.Nullable
-  @JsonIgnore
 
   public EnumIntegerEnum getEnumInteger() {
-        return enumInteger.orElse(null);
+        return enumInteger;
   }
 
   @JsonProperty(JSON_PROPERTY_ENUM_INTEGER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public JsonNullable<EnumIntegerEnum> getEnumInteger_JsonNullable() {
-    return enumInteger;
-  }
-  
-  @JsonProperty(JSON_PROPERTY_ENUM_INTEGER)
-  public void setEnumInteger_JsonNullable(JsonNullable<EnumIntegerEnum> enumInteger) {
-    this.enumInteger = enumInteger;
-  }
-
   public void setEnumInteger(@jakarta.annotation.Nullable EnumIntegerEnum enumInteger) {
-    this.enumInteger = JsonNullable.<EnumIntegerEnum>of(enumInteger);
+    this.enumInteger = enumInteger;
   }
 
   public EnumTest enumNumber(@jakarta.annotation.Nullable EnumNumberEnum enumNumber) {
@@ -451,7 +442,7 @@ public class EnumTest {
     EnumTest enumTest = (EnumTest) o;
     return Objects.equals(this.enumString, enumTest.enumString) &&
         Objects.equals(this.enumStringRequired, enumTest.enumStringRequired) &&
-        equalsNullable(this.enumInteger, enumTest.enumInteger) &&
+        Objects.equals(this.enumInteger, enumTest.enumInteger) &&
         Objects.equals(this.enumNumber, enumTest.enumNumber) &&
         equalsNullable(this.outerEnum, enumTest.outerEnum) &&
         Objects.equals(this.outerEnumInteger, enumTest.outerEnumInteger) &&
@@ -465,7 +456,7 @@ public class EnumTest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enumString, enumStringRequired, hashCodeNullable(enumInteger), enumNumber, hashCodeNullable(outerEnum), outerEnumInteger, outerEnumDefaultValue, outerEnumIntegerDefaultValue);
+    return Objects.hash(enumString, enumStringRequired, enumInteger, enumNumber, hashCodeNullable(outerEnum), outerEnumInteger, outerEnumDefaultValue, outerEnumIntegerDefaultValue);
   }
 
   private static <T> int hashCodeNullable(JsonNullable<T> a) {
