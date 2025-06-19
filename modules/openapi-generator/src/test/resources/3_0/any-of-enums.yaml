@@ -1,0 +1,85 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Enum test
+servers:
+  - url: http://localhost:3000
+paths:
+  /fake/string-enum:
+    post:
+      operationId: StringEnum
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: StringEnum.
+              properties:
+                id:
+                  type: number
+                enumType:
+                  type: string
+                  enum:
+                    - one
+                    - two
+                    - three
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringEnum'
+components:
+  schemas:
+    StringEnum:
+      type: string
+      enum:
+        - one
+        - two
+        - three
+    NumberEnum:
+      type: number
+      enum:
+        - 1
+        - 2
+        - 3
+    AnyOfEnum:
+      type: object
+      anyOf:
+        - type: string
+          enum:
+          - one
+          - two
+          - three
+    AnyOfStringEnum:
+      type: object
+      anyOf:
+        - type: string
+          enum:
+          - one
+          - two
+          - three
+        - $ref: "#/components/schemas/NumberEnum"
+    AnyOfTwoRefEnums:
+      type: object
+      anyOf:
+        - $ref: "#/components/schemas/StringEnum"
+        - $ref: "#/components/schemas/NumberEnum"
+    AnyOfTwoStringEnums:
+      type: object
+      anyOf:
+        - type: string
+          enum:
+            - one
+            - two
+            - three
+        - type: string
+          enum:
+            - four
+            - five
+            - six
+    AnyOfStringAndEnum:
+      type: object
+      anyOf:
+        - type: string
+        - $ref: "#/components/schemas/NumberEnum"

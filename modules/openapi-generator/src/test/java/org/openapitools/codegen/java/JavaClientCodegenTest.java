@@ -381,6 +381,40 @@ public class JavaClientCodegenTest {
     }
 
     @Test
+    public void testGetSchemaWithIgnoreAnyOfEnum() {
+        final Path output = newTempFolder();
+        final OpenAPI openAPI = new OpenAPIParser()
+                .readLocation("src/test/resources/3_0/any-of-enums.yaml", null, new ParseOptions())
+                .getOpenAPI();
+
+        final JavaClientCodegen codegen = new JavaClientCodegen();
+        codegen.setOutputDir(output.toString());
+        codegen.additionalProperties().put(CXFServerFeatures.LOAD_TEST_DATA_FROM_FILE, "true");
+        codegen.setIgnoreAnyOfInEnum(true);
+
+        final ClientOptInput input = new ClientOptInput().openAPI(openAPI).config(codegen);
+
+        DefaultGenerator generator = new DefaultGenerator();
+        generator.setGeneratorPropertyDefault(CodegenConstants.MODELS, "true");
+        generator.setGeneratorPropertyDefault(CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR, "false");
+        generator.setGeneratorPropertyDefault(CodegenConstants.MODEL_TESTS, "false");
+        generator.setGeneratorPropertyDefault(CodegenConstants.MODEL_DOCS, "false");
+        generator.setGeneratorPropertyDefault(CodegenConstants.SUPPORTING_FILES, "false");
+        generator.opts(input).generate();
+
+        assertThat(output.resolve("src/main/java/org/openapitools/client/model/StringEnum.java"))
+                .content().contains("public enum StringEnum");
+        assertThat(output.resolve("src/main/java/org/openapitools/client/model/AnyOfStringEnum.java"))
+                .content().contains("public enum AnyOfStringEnum");
+        assertThat(output.resolve("src/main/java/org/openapitools/client/model/AnyOfTwoRefEnums.java"))
+                .content().contains("public class AnyOfTwoRefEnums");
+        assertThat(output.resolve("src/main/java/org/openapitools/client/model/AnyOfTwoStringEnums.java"))
+                .content().contains("public enum AnyOfTwoStringEnums");
+        assertThat(output.resolve("src/main/java/org/openapitools/client/model/AnyOfStringAndEnum.java"))
+                .content().doesNotContain("public enum AnyOfStringAndEnum");
+    }
+
+    @Test
     public void updateCodegenPropertyEnum() {
         final JavaClientCodegen codegen = new JavaClientCodegen();
         CodegenProperty array = codegenPropertyWithArrayOfIntegerValues();

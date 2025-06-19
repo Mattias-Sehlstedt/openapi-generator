@@ -63,6 +63,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -71,6 +72,7 @@ import java.util.stream.StreamSupport;
 
 import static org.openapitools.codegen.utils.CamelizeOption.*;
 import static org.openapitools.codegen.utils.ModelUtils.getSchemaItems;
+import static org.openapitools.codegen.utils.ModelUtils.isAnyOf;
 import static org.openapitools.codegen.utils.OnceLogger.once;
 import static org.openapitools.codegen.utils.StringUtils.*;
 
@@ -2099,28 +2101,37 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
         additionalProperties.put(CodegenConstants.ARTIFACT_VERSION, artifactVersion);
 
         if (ignoreAnyOfInEnum) {
-            // Alter OpenAPI schemas ignore anyOf keyword if it consist of an enum. Example:
-            //     anyOf:
-            //     - type: string
-            //       enum:
-            //       - ENUM_A
-            //       - ENUM_B
-            Stream.concat(
-                            Stream.of(openAPI.getComponents().getSchemas()),
-                            openAPI.getComponents().getSchemas().values().stream()
-                                    .filter(schema -> schema.getProperties() != null)
-                                    .map(Schema::getProperties))
-                    .forEach(schemas -> schemas.replaceAll(
-                            (name, s) -> Stream.of(s)
-                                    .filter(schema -> ModelUtils.isComposedSchema((Schema) schema))
-                                    //.map(schema -> (ComposedSchema) schema)
-                                    .filter(schema -> Objects.nonNull(((Schema) schema).getAnyOf()))
-                                    .flatMap(schema -> ((Schema) schema).getAnyOf().stream())
-                                    .filter(schema -> Objects.nonNull(((Schema) schema).getEnum()))
-                                    .findFirst()
-                                    .orElse((Schema) s)));
+            simplifyAnyOfInEnum(openAPI);
         }
     }
+
+    // Alter OpenAPI schemas ignore anyOf keyword if it consists of an enum. Example:
+    //     anyOf:
+    //     - type: string
+    //       enum:
+    //       - ENUM_A
+    //       - ENUM_B
+    private static void simplifyAnyOfInEnum(OpenAPI openAPI) {
+        Stream.concat(
+                        Stream.of(openAPI.getComponents().getSchemas()),
+                        openAPI.getComponents().getSchemas().values().stream()
+                                .filter(schema -> schema.getProperties() != null)
+                                .map(Schema::getProperties))
+                .forEach(schemas -> schemas.replaceAll(
+                        (name, s) -> Stream.of(s)
+                                .filter(schema -> ModelUtils.isComposedSchema((Schema) schema))
+                                .map(schema -> (Schema) schema)
+                                .filter(schema -> isAnyOfSchema.test(schema))
+                                .flatMap(schema -> (schema).getAnyOf().stream())
+                                .filter(schema -> isEnumSchema.test((Schema) schema))
+                                .findFirst()
+                                .orElse(s)));
+    }
+
+    // TODO: can these predicates be replaced with the anyOf/Enum methods provided in ModelUtils?
+    private static final Predicate<Schema> isAnyOfSchema = schema -> Objects.nonNull(schema.getAnyOf());
+
+    private static final Predicate<Schema> isEnumSchema = schema -> Objects.nonNull(schema.getEnum());
 
     private static String[] getAccepts(OpenAPI openAPIArg, Operation operation) {
         final Set<String> producesInfo = getProducesInfo(openAPIArg, operation);
