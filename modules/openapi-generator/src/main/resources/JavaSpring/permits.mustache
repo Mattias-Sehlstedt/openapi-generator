@@ -1,1 +1,8 @@
-{{#useSealed}}{{#permits}}{{#-first}}permits {{/-first}}{{{.}}}{{^-last}}, {{/-last}}{{#-last}} {{/-last}}{{/permits}}{{/useSealed}}
+{{#useSealed}}
+    {{#permits}}{{#-first}}permits {{/-first}}{{{.}}}{{^-last}}, {{/-last}}{{#-last}} {{/-last}}{{/permits}}
+{{/useSealed}}
+{{^useSealed}}
+    {{#useSealedInterface}}
+        {{#vendorExtensions.x-is-one-of-interface}}{{#permits}}{{#-first}}permits {{/-first}}{{{.}}}{{^-last}}, {{/-last}}{{#-last}} {{/-last}}{{/permits}}{{/vendorExtensions.x-is-one-of-interface}}
+    {{/useSealedInterface}}
+{{/useSealed}}

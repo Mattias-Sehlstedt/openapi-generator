@@ -97,6 +97,7 @@ public class SpringCodegen extends AbstractJavaCodegen
     public static final String USE_REQUEST_MAPPING_ON_CONTROLLER = "useRequestMappingOnController";
     public static final String USE_REQUEST_MAPPING_ON_INTERFACE = "useRequestMappingOnInterface";
     public static final String USE_SEALED = "useSealed";
+    public static final String SEALED_INTERFACE = "useSealedInterface";
     public static final String OPTIONAL_ACCEPT_NULLABLE = "optionalAcceptNullable";
     public static final String USE_SPRING_BUILT_IN_VALIDATION = "useSpringBuiltInValidation";
 
@@ -139,7 +140,8 @@ public class SpringCodegen extends AbstractJavaCodegen
     protected boolean performBeanValidation = false;
     @Setter protected boolean apiFirst = false;
     protected boolean useOptional = false;
-    @Setter protected boolean useSealed = false;
+    @Setter protected String useSealed = "false";
+    @Setter protected boolean useSealedInterface = false;
     @Setter protected boolean virtualService = false;
     @Setter protected boolean hateoas = false;
     @Setter protected boolean returnSuccessCode = false;
@@ -228,8 +230,8 @@ public class SpringCodegen extends AbstractJavaCodegen
                 useSpringBuiltInValidation));
         cliOptions.add(CliOption.newBoolean(PERFORM_BEANVALIDATION,
                 "Use Bean Validation Impl. to perform BeanValidation", performBeanValidation));
-        cliOptions.add(CliOption.newBoolean(USE_SEALED,
-                "Whether to generate sealed model interfaces and classes"));
+        cliOptions.add(CliOption.newString(USE_SEALED,
+                "Setting this property to \"true\" will generate sealed model interfaces and classes. Setting it to \"oneOfInterface\" will only generate sealed interfaces.").defaultValue("false"));
         cliOptions.add(CliOption.newBoolean(API_FIRST,
                 "Generate the API from the OAI spec at server compile time (API first approach)", apiFirst));
         cliOptions
@@ -432,7 +434,10 @@ public class SpringCodegen extends AbstractJavaCodegen
         convertPropertyToBooleanAndWriteBack(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS, value -> this.generatedConstructorWithRequiredArgs = value);
         convertPropertyToBooleanAndWriteBack(RETURN_SUCCESS_CODE, this::setReturnSuccessCode);
         convertPropertyToBooleanAndWriteBack(USE_SWAGGER_UI, this::setUseSwaggerUI);
-        convertPropertyToBooleanAndWriteBack(USE_SEALED, this::setUseSealed);
+        convertPropertyToStringAndWriteBack(USE_SEALED, this::setUseSealed);
+        writePropertyBack(USE_SEALED, getUseSealed());
+        writePropertyBack(SEALED_INTERFACE, getUseSealedInterface());
+
         if (getDocumentationProvider().equals(DocumentationProvider.NONE)) {
             this.setUseSwaggerUI(false);
         }
@@ -1206,5 +1211,13 @@ public class SpringCodegen extends AbstractJavaCodegen
         extensions.add(VendorExtension.X_VERSION_PARAM);
         extensions.add(VendorExtension.X_PATTERN_MESSAGE);
         return extensions;
+    }
+
+    public boolean getUseSealed() {
+        return "true".equals(useSealed);
+    }
+
+    public boolean getUseSealedInterface() {
+        return "true".equals(useSealed) || "oneOfInterface".equals(useSealed);
     }
 }
