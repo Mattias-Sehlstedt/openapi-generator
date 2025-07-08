@@ -141,7 +141,6 @@ public class SpringCodegen extends AbstractJavaCodegen
     @Setter protected boolean apiFirst = false;
     protected boolean useOptional = false;
     @Setter protected String useSealed = "false";
-    @Setter protected boolean useSealedInterface = false;
     @Setter protected boolean virtualService = false;
     @Setter protected boolean hateoas = false;
     @Setter protected boolean returnSuccessCode = false;
