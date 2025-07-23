@@ -829,7 +829,8 @@ public class OpenAPINormalizerTest {
 
         assertNull(((Schema) schema.getProperties().get("arrayDataOrNull")).getNullable());
         assertNull(((Schema) schema.getProperties().get("stringDataOrNull")).getNullable());
-        assertNull(((Schema) schema.getProperties().get("oneofOrNull")).getNullable());
+        assertNull(((Schema) schema.getProperties().get("oneOfOrNull")).getNullable());
+        assertNull(((Schema) schema.getProperties().get("oneOfPrimitiveOrNull")).getNullable());
 
         Map<String, String> inputRules = Map.of("NORMALIZE_31SPEC", "true");
         OpenAPINormalizer openAPINormalizer = new OpenAPINormalizer(openAPI, inputRules);
@@ -837,7 +838,8 @@ public class OpenAPINormalizerTest {
 
         assertTrue(((Schema) schema.getProperties().get("arrayDataOrNull")).getNullable());
         assertTrue(((Schema) schema.getProperties().get("stringDataOrNull")).getNullable());
-        assertTrue(((Schema) schema.getProperties().get("oneofOrNull")).getNullable());
+        assertTrue(((Schema) schema.getProperties().get("oneOfOrNull")).getNullable());
+        assertTrue(((Schema) schema.getProperties().get("oneOfPrimitiveOrNull")).getNullable());
     }
 
     @Test

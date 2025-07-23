@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -273,8 +272,9 @@ public class OpenAPINormalizer {
             rules.put(FILTER, true);
 
             String[] filterStrs = inputRules.get(FILTER).split(":");
+            String filterRuleFromRestrictions = "FILTER rule must be in the form of `operationId:name1|name2|name3` or `method:get|post|put` or `tag:tag1|tag2|tag3`: {}";
             if (filterStrs.length != 2) { // only support operationId with : at the moment
-                LOGGER.error("FILTER rule must be in the form of `operationId:name1|name2|name3` or `method:get|post|put` or `tag:tag1|tag2|tag3`: {}", inputRules.get(FILTER));
+                LOGGER.error(filterRuleFromRestrictions, inputRules.get(FILTER));
             } else {
                 if ("operationId".equals(filterStrs[0])) {
                     operationIdFilters = Arrays.stream(filterStrs[1].split("[|]"))
@@ -292,7 +292,7 @@ public class OpenAPINormalizer {
                             .map(String::trim)
                             .collect(Collectors.toCollection(HashSet::new));
                 } else {
-                    LOGGER.error("FILTER rule must be in the form of `operationId:name1|name2|name3` or `method:get|post|put` or `tag:tag1|tag2|tag3`: {}", inputRules.get(FILTER));
+                    LOGGER.error(filterRuleFromRestrictions, inputRules.get(FILTER));
                 }
             }
         }
@@ -1636,7 +1636,7 @@ public class OpenAPINormalizer {
                         schema.addAnyOfItem(new BooleanSchema());
                         break;
                     default:
-                        LOGGER.error("Type {} not yet supported in openapi-normalizer to process OpenAPI 3.1 spec with multiple types.");
+                        LOGGER.error("Type {} not yet supported in openapi-normalizer to process OpenAPI 3.1 spec with multiple types.", type);
                         LOGGER.error("Please report the issue via https://github.com/OpenAPITools/openapi-generator/issues/new/.");
                 }
             }
