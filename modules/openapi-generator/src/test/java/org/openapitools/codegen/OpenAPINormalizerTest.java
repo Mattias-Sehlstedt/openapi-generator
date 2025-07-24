@@ -829,7 +829,8 @@ public class OpenAPINormalizerTest {
 
         assertNull(((Schema) schema.getProperties().get("arrayDataOrNull")).getNullable());
         assertNull(((Schema) schema.getProperties().get("stringDataOrNull")).getNullable());
-        assertNull(((Schema) schema.getProperties().get("oneofOrNull")).getNullable());
+        assertNull(((Schema) schema.getProperties().get("oneOfOrNull")).getNullable());
+        assertNull(((Schema) schema.getProperties().get("oneOfPrimitiveAliasOrNull")).getNullable());
 
         Map<String, String> inputRules = Map.of("NORMALIZE_31SPEC", "true");
         OpenAPINormalizer openAPINormalizer = new OpenAPINormalizer(openAPI, inputRules);
@@ -837,7 +838,8 @@ public class OpenAPINormalizerTest {
 
         assertTrue(((Schema) schema.getProperties().get("arrayDataOrNull")).getNullable());
         assertTrue(((Schema) schema.getProperties().get("stringDataOrNull")).getNullable());
-        assertTrue(((Schema) schema.getProperties().get("oneofOrNull")).getNullable());
+        assertTrue(((Schema) schema.getProperties().get("oneOfOrNull")).getNullable());
+        assertTrue(((Schema) schema.getProperties().get("oneOfPrimitiveAliasOrNull")).getNullable());
     }
 
     @Test
@@ -877,6 +879,7 @@ public class OpenAPINormalizerTest {
         assertEquals(schema15.getOneOf().size(), 3);
 
         Schema schema17 = openAPI.getComponents().getSchemas().get("OneOfNullAndRef3");
+        assertNull(schema17.getNullable());
         assertEquals(schema17.getOneOf().size(), 2);
 
         Schema schema19 = openAPI.getComponents().getSchemas().get("ParentWithOneOfProperty");
@@ -930,6 +933,7 @@ public class OpenAPINormalizerTest {
         Schema schema18 = openAPI.getComponents().getSchemas().get("OneOfNullAndRef3");
         // original oneOf removed and simplified to just $ref (oneOf sub-schema) instead
         assertEquals(schema18.getOneOf(), null);
+        assertTrue(schema18.getNullable());
         assertEquals(schema18.get$ref(), "#/components/schemas/Parent");
 
         Schema schema20 = openAPI.getComponents().getSchemas().get("ParentWithOneOfProperty");

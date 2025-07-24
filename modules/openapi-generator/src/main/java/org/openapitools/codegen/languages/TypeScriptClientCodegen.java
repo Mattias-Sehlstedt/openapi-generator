@@ -20,6 +20,7 @@ package org.openapitools.codegen.languages;
 import com.github.curiousoddman.rgxgen.RgxGen;
 import com.google.common.collect.Sets;
 import io.swagger.v3.core.util.Json;
+import io.swagger.v3.oas.models.SpecVersion;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
@@ -1107,6 +1108,17 @@ public class TypeScriptClientCodegen extends AbstractTypeScriptClientCodegen imp
         }
     }
 
+    @Override
+    protected Map<String, Schema> unaliasPropertySchema(Map<String, Schema> properties) {
+        if (properties != null) {
+            for (String key : properties.keySet()) {
+                properties.put(key, unaliasNullableAlias(properties.get(key)));
+            }
+            return super.unaliasPropertySchema(properties);
+        }
+        return properties;
+    }
+
     /**
      * Split composed types
      * e.g. TheFirstType | TheSecondType to TheFirstType and TheSecondType
@@ -1116,5 +1128,22 @@ public class TypeScriptClientCodegen extends AbstractTypeScriptClientCodegen imp
      */
     protected String[] splitComposedTypes(String type) {
         return type.replace(" ", "").split("[|&<>]");
+    }
+
+    private Schema unaliasNullableAlias(Schema schema) {
+        Map<String, Schema> allSchemas = ModelUtils.getSchemas(openAPI);
+        if (schema != null && StringUtils.isNotEmpty(schema.get$ref())) {
+            String simpleRef = ModelUtils.getSimpleRef(schema.get$ref());
+            if (super.schemaMapping.containsKey(simpleRef)) {
+                LOGGER.debug("Schema unaliasing of {} omitted because aliased class is to be mapped to {}", simpleRef, super.schemaMapping.get(simpleRef));
+                return schema;
+            }
+            Schema ref = allSchemas.get(simpleRef);
+            if (ref != null && ModelUtils.isPrimitiveType(ref)) {
+                return ModelUtils.cloneSchema(ref, ref.getSpecVersion().equals(SpecVersion.V31))
+                        .nullable(schema.getNullable());
+            }
+        }
+        return schema;
     }
 }

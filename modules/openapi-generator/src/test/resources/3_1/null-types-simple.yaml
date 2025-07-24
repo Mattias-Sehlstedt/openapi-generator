@@ -10,7 +10,8 @@ components:
         # This simplifies the output
         - arrayDataOrNull
         - stringDataOrNull
-        - oneofOrNull
+        - oneOfOrNull
+        - oneOfPrimitiveAliasOrNull
       properties:
         arrayDataOrNull:
           items:
@@ -26,12 +27,20 @@ components:
             - 'null'
         # This was working when this fixture was introduced,
         # but we need to make sure we don't regress
-        oneofOrNull:
+        oneOfOrNull:
           oneOf:
             - $ref: "#/components/schemas/SomeObject"
+            - type: 'null'
+        oneOfPrimitiveAliasOrNull:
+          oneOf:
+            - $ref: "#/components/schemas/PrimitiveAlias"
             - type: 'null'
     SomeObject:
       type: object
       properties:
         data:
           type: string
+    PrimitiveAlias:
+      type: integer
+      format: int32
+      description: AliasDescription

@@ -16,7 +16,11 @@ import { HttpFile } from '../http/http';
 export class WithNullableType {
     'arrayDataOrNull': Array<SomeObject> | null;
     'stringDataOrNull': string | null;
-    'oneofOrNull': SomeObject | null;
+    'oneOfOrNull': SomeObject | null;
+    /**
+    * AliasDescription
+    */
+    'oneOfPrimitiveAliasOrNull': number | null;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -36,10 +40,16 @@ export class WithNullableType {
             "format": ""
         },
         {
-            "name": "oneofOrNull",
-            "baseName": "oneofOrNull",
+            "name": "oneOfOrNull",
+            "baseName": "oneOfOrNull",
             "type": "SomeObject",
             "format": ""
+        },
+        {
+            "name": "oneOfPrimitiveAliasOrNull",
+            "baseName": "oneOfPrimitiveAliasOrNull",
+            "type": "number",
+            "format": "int32"
         }    ];
 
     static getAttributeTypeMap() {
