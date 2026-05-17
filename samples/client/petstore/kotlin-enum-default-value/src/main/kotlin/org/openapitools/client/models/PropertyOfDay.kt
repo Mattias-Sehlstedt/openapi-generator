@@ -89,6 +89,16 @@ data class PropertyOfDay (
         @Json(name = "WEEKEND") WEEKEND("WEEKEND"),
         @Json(name = "EVERYDAY") EVERYDAY("EVERYDAY"),
         @Json(name = "11184809") unknown_default_open_api("11184809");
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value.toString()
+
     }
     /**
      * Month of year
@@ -110,6 +120,16 @@ data class PropertyOfDay (
         @Json(name = "11") `11`(11),
         @Json(name = "12") `12`(12),
         @Json(name = "11184809") unknown_default_open_api(11184809);
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value.toString()
+
     }
     /**
      * Holiday types
@@ -138,6 +158,16 @@ data class PropertyOfDay (
         @Json(name = "CHRISTMAS_DAY") XMAS_DAY("CHRISTMAS_DAY"),
         @Json(name = "BOXING_DAY") BOXING_DAY("BOXING_DAY"),
         @Json(name = "11184809") unknown_default_open_api("11184809");
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value.toString()
+
     }
 
 }

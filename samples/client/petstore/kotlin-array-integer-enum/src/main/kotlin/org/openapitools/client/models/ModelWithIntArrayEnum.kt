@@ -59,6 +59,16 @@ data class ModelWithIntArrayEnum (
         @Json(name = "4") _4(4),
         @Json(name = "5") _5(5),
         @Json(name = "6") _6(6);
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value.toString()
+
     }
 
 }

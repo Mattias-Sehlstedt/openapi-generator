@@ -72,6 +72,16 @@ data class Order (
         @JsonProperty(value = "approved") APPROVED("approved"),
         @JsonProperty(value = "delivered") DELIVERED("delivered"),
         @JsonProperty(value = "unknown_default_open_api") @JsonEnumDefaultValue UNKNOWN_DEFAULT_OPEN_API("unknown_default_open_api");
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value
+
     }
 
 }

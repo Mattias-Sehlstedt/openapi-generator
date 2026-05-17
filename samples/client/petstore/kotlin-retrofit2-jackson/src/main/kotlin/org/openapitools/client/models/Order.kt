@@ -74,6 +74,16 @@ data class Order (
         @JsonProperty(value = "placed") PLACED("placed"),
         @JsonProperty(value = "approved") APPROVED("approved"),
         @JsonProperty(value = "delivered") DELIVERED("delivered");
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value
+
     }
 
 }

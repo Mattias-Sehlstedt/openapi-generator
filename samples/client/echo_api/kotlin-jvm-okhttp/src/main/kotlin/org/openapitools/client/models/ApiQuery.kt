@@ -56,6 +56,16 @@ data class ApiQuery (
         @Json(name = "SUCCESS") SUCCESS("SUCCESS"),
         @Json(name = "FAILURE") FAILURE("FAILURE"),
         @Json(name = "SKIPPED") SKIPPED("SKIPPED");
+
+        /**
+        * Override [toString()] to avoid using the enum variable name as the value, and instead use
+        * the actual value defined in the API spec file.
+        *
+        * This solves a problem when the variable name and its value are different, and ensures that
+        * the client sends the correct enum values to the server always.
+        */
+        override fun toString(): kotlin.String = value.toString()
+
     }
 
 }
