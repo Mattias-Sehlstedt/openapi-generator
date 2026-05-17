@@ -43,11 +43,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.openapitools.codegen.CodegenConstants.*;
-import static org.openapitools.codegen.languages.KotlinClientCodegen.COMPANION_OBJECT;
-import static org.openapitools.codegen.languages.KotlinClientCodegen.GENERATE_ONEOF_ANYOF_WRAPPERS;
+import static org.openapitools.codegen.languages.KotlinClientCodegen.*;
 
 @SuppressWarnings("static-method")
 public class KotlinClientCodegenModelTest {
+
+    private static final String KOTLIN_GENERATOR = "kotlin";
 
     private Schema<?> getArrayTestSchema() {
         return new ObjectSchema()
@@ -369,7 +370,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary("jvm-retrofit2")
                 .setAdditionalProperties(properties)
                 .setInputSpec("src/test/resources/3_0/issue4808.yaml")
@@ -392,7 +393,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setInputSpec("src/test/resources/3_0/ping.yaml")
                 .addAdditionalProperty("omitGradleWrapper", true)
                 .setOutputDir(output.getAbsolutePath().replace("\\", "/"));
@@ -495,7 +496,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary(clientLibrary.getLibraryName())
                 .setInputSpec("src/test/resources/3_0/issue_19942.json")
                 .addAdditionalProperty("omitGradleWrapper", true)
@@ -519,7 +520,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary(clientLibrary.getLibraryName())
                 .setInputSpec("src/test/resources/3_0/issue_19942.json")
                 .addAdditionalProperty("omitGradleWrapper", true)
@@ -581,7 +582,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary("jvm-retrofit2")
                 .setAdditionalProperties(new HashMap<>() {{
                     put(CodegenConstants.SERIALIZATION_LIBRARY, "kotlinx_serialization");
@@ -621,7 +622,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary("jvm-retrofit2")
                 .setAdditionalProperties(new HashMap<>() {{
                     put(CodegenConstants.SERIALIZATION_LIBRARY, "kotlinx_serialization");
@@ -656,7 +657,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary("jvm-retrofit2")
                 .setAdditionalProperties(new HashMap<>() {{
                     put(CodegenConstants.SERIALIZATION_LIBRARY, "kotlinx_serialization");
@@ -691,7 +692,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setLibrary("jvm-okhttp4")
                 .setAdditionalProperties(new HashMap<>() {{
                     put(CodegenConstants.SERIALIZATION_LIBRARY, "jackson");
@@ -747,7 +748,7 @@ public class KotlinClientCodegenModelTest {
       output.deleteOnExit();
 
       final CodegenConfigurator configurator = new CodegenConfigurator()
-              .setGeneratorName("kotlin")
+              .setGeneratorName(KOTLIN_GENERATOR)
               .setLibrary("jvm-ktor")
               .setAdditionalProperties(new HashMap<>() {{
                 put(CodegenConstants.SERIALIZATION_LIBRARY, "jackson");
@@ -773,7 +774,7 @@ public class KotlinClientCodegenModelTest {
       output.deleteOnExit();
 
       final CodegenConfigurator configurator = new CodegenConfigurator()
-              .setGeneratorName("kotlin")
+              .setGeneratorName(KOTLIN_GENERATOR)
               .setLibrary("jvm-retrofit2")
               .setAdditionalProperties(new HashMap<>() {{
                 put(CodegenConstants.SERIALIZATION_LIBRARY, "jackson");
@@ -799,7 +800,7 @@ public class KotlinClientCodegenModelTest {
       output.deleteOnExit();
 
       final CodegenConfigurator configurator = new CodegenConfigurator()
-              .setGeneratorName("kotlin")
+              .setGeneratorName(KOTLIN_GENERATOR)
               .setLibrary("jvm-retrofit2")
               .setAdditionalProperties(new HashMap<>() {{
                 put(CodegenConstants.SERIALIZATION_LIBRARY, "jackson");
@@ -825,7 +826,7 @@ public class KotlinClientCodegenModelTest {
       output.deleteOnExit();
 
       final CodegenConfigurator configurator = new CodegenConfigurator()
-              .setGeneratorName("kotlin")
+              .setGeneratorName(KOTLIN_GENERATOR)
               .setLibrary("jvm-retrofit2")
               .setAdditionalProperties(new HashMap<>() {{
                 put(CodegenConstants.SERIALIZATION_LIBRARY, "jackson");
@@ -848,6 +849,36 @@ public class KotlinClientCodegenModelTest {
       TestUtils.assertFileNotContains(enumKt, "throw IllegalArgumentException(\"Unknown ExampleNumericEnum value");
   }
 
+    @Test
+    public void testEnumWithCustomVariableNames() throws IOException {
+        File output = Files.createTempDirectory("test").toFile();
+        output.deleteOnExit();
+
+        final CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName(KOTLIN_GENERATOR)
+                .setLibrary("multiplatform")
+                .setAdditionalProperties(new HashMap<>() {{
+                    put(CodegenConstants.SERIALIZATION_LIBRARY, "jackson");
+                    put(CodegenConstants.MODEL_PACKAGE, "model");
+                    put("dateLibrary", "kotlinx-datetime");
+                }})
+                .setInputSpec("src/test/resources/3_0/kotlin/issue23764_x_enum_varnames_serialization.yaml")
+                .setOutputDir(output.getAbsolutePath().replace("\\", "/"));
+
+        final ClientOptInput clientOptInput = configurator.toClientOptInput();
+        DefaultGenerator generator = new DefaultGenerator();
+
+        generator.opts(clientOptInput).generate();
+
+        final Path definedEnumKt = Paths.get(output + "/src/commonMain/kotlin/model/ApiError.kt");
+        final Path inlineEnumKt = Paths.get(output + "/src/commonMain/kotlin/model/AllowFoo.kt");
+        final Path headerEnumKt = Paths.get(output + "/src/commonMain/kotlin/org/openapitools/client/apis/DefaultApi.kt");
+
+        TestUtils.assertFileContains(definedEnumKt, "override fun toString(): kotlin.String = value.toString()");
+        TestUtils.assertFileContains(inlineEnumKt, "override fun toString(): kotlin.String = value");
+        TestUtils.assertFileContains(headerEnumKt, "override fun toString(): kotlin.String = value");
+    }
+
     @Test(description = "convert an empty model to object")
     public void emptyModelKotlinxSerializationTest() throws IOException {
         final Schema<?> schema = new ObjectSchema()
@@ -862,7 +893,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .setAdditionalProperties(new HashMap<>() {{
                     put(CodegenConstants.MODEL_PACKAGE, "model");
                     put(GENERATE_ONEOF_ANYOF_WRAPPERS, false);
@@ -911,7 +942,7 @@ public class KotlinClientCodegenModelTest {
         output.deleteOnExit();
 
         final CodegenConfigurator configurator = new CodegenConfigurator()
-                .setGeneratorName("kotlin")
+                .setGeneratorName(KOTLIN_GENERATOR)
                 .addAdditionalProperty(COMPANION_OBJECT, true)
                 .setInputSpec("src/test/resources/3_0/petstore.yaml")
                 .setOutputDir(output.getAbsolutePath().replace("\\", "/"));
