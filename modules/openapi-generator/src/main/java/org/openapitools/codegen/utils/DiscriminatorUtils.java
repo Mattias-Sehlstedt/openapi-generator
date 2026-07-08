@@ -3,6 +3,7 @@ package org.openapitools.codegen.utils;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.Discriminator;
 import io.swagger.v3.oas.models.media.Schema;
+import org.openapitools.codegen.CodegenDiscriminator.MappedModel;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.codegen.CodegenProperty;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.openapitools.codegen.CodegenConstants.X_DISCRIMINATOR_VALUE;
 import static org.openapitools.codegen.utils.OnceLogger.once;
 
 public class DiscriminatorUtils {
@@ -24,6 +26,14 @@ public class DiscriminatorUtils {
             "'{}' defines discriminator '{}', but the referenced schema '{}' is missing {}";
     private static final String DEFINES_DISCRIMINATOR_BUT_ALTERNATIVE_HAS_OTHER_DEFINITION =
             "'{}' defines discriminator '{}', but the schema '{}' has a different {} definition than the prior schema's. Make sure the {} type and required values are the same";
+    private static final String STACK_OVERFLOW_ERROR =
+            "Stack overflow hit when looking for %s, an infinite loop starting and ending at %s was seen";
+    private static final String FAILED_TO_FIND_SCHEMA =
+            "Failed to lookup the schema '{}' when processing oneOf/anyOf. Please check to ensure it's defined properly.";
+    private static final String DEFINES_DISCRIMINATOR_BUT_REFERENCE_IS_INCORRECT =
+            "'{}' defines discriminator '{}', but the referenced schema '{}' is incorrect. {}";
+    private static final String INVALID_SCHEMA_DEFINED =
+            "Invalid inline schema defined in oneOf/anyOf in '{}'. Per the OpenApi spec, for this case when a composed schema defines a discriminator, the oneOf/anyOf schemas must use $ref. Change this inline definition to a $ref definition";
 
     /**
      * Recursively look in Schema sc for the discriminator discPropName
@@ -181,6 +191,153 @@ public class DiscriminatorUtils {
     }
 
     /**
+     * Returns the discriminator descendants defined explicitly by the source discriminator mapping.
+     * Each mapping entry is converted into a {@link MappedModel}, using the mapped name when a
+     * discriminator value is provided, or resolving the referenced model name when the mapping points
+     * to a schema reference.
+     *
+     * @param openAPI the OpenAPI specification
+     * @param sourceDiscriminator the discriminator containing explicit mappings
+     * @return the list of unique descendant models defined by the discriminator mapping
+     */
+    public static List<MappedModel> getUniqueDescendants(OpenAPI openAPI, Discriminator sourceDiscriminator) {
+        List<MappedModel> uniqueDescendants = new ArrayList<>();
+        if (sourceDiscriminator.getMapping() != null && !sourceDiscriminator.getMapping().isEmpty()) {
+            for (Map.Entry<String, String> entry : sourceDiscriminator.getMapping().entrySet()) {
+                String name;
+                if (entry.getValue().indexOf('/') >= 0) {
+                    name = ModelUtils.getSimpleRef(entry.getValue());
+                    if (ModelUtils.getSchema(openAPI, name) == null) {
+                        once(LOGGER).error(FAILED_TO_FIND_SCHEMA, name);
+                    }
+                } else {
+                    name = entry.getValue();
+                }
+                uniqueDescendants.add(new MappedModel(entry.getKey(), name, name, true));
+            }
+        }
+        return uniqueDescendants;
+    }
+
+    /**
+     * Finds all descendant schemas that inherit from the given schema via {@code allOf}.
+     * The method walks the schema graph, collects descendant models, and resolves any discriminator
+     * vendor extension value when present to determine the mapping name.
+     *
+     * @param openAPI the OpenAPI specification
+     * @param thisSchemaName the name of the schema whose descendants should be found
+     * @return the list of descendant models reachable through {@code allOf}
+     */
+    public static List<MappedModel> getAllOfDescendants(OpenAPI openAPI,
+                                                        String thisSchemaName) {
+        ArrayList<String> queue = new ArrayList<>();
+        List<MappedModel> descendentSchemas = new ArrayList<>();
+        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
+        String currentSchemaName = thisSchemaName;
+        Set<String> keys = schemas.keySet();
+
+        int count = 0;
+        // hack: avoid infinite loop on potential self-references in event our checks fail.
+        while (100000 > count++) {
+            for (String childName : keys) {
+                if (childName.equals(thisSchemaName)) {
+                    continue;
+                }
+                Schema child = schemas.get(childName);
+                if (ModelUtils.isComposedSchema(child)) {
+                    List<Schema> parents = child.getAllOf();
+                    if (parents != null) {
+                        for (Schema parent : parents) {
+                            String ref = parent.get$ref();
+                            if (ref == null) {
+                                // for schemas with no ref, it is not possible to build the discriminator map
+                                // because ref is how we get the model name
+                                // we hit this use case when an allOf composed schema contains an inline schema
+                                continue;
+                            }
+                            String parentName = ModelUtils.getSimpleRef(ref);
+                            if (parentName != null && parentName.equals(currentSchemaName)) {
+                                if (queue.contains(childName) || descendentSchemas.stream().anyMatch(i -> childName.equals(i.getMappingName()))) {
+                                    throw new RuntimeException(String.format(STACK_OVERFLOW_ERROR, childName, currentSchemaName));
+                                }
+                                queue.add(childName);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (queue.isEmpty()) {
+                break;
+            }
+            currentSchemaName = queue.remove(0);
+            Schema sc = schemas.get(currentSchemaName);
+            String mappingName = discriminatorVendorExtensionValue(sc)
+                            .orElse(currentSchemaName);
+            MappedModel mm = new MappedModel(mappingName, currentSchemaName, currentSchemaName, !mappingName.equals(currentSchemaName));
+            descendentSchemas.add(mm);
+        }
+        return descendentSchemas;
+    }
+
+    /**
+     * This function is only used for composed schemas which have a discriminator.
+     * Process {@code oneOf} and {@code anyOf} models in a composed schema and adds them into
+     * a list if the {@code oneOf} and {@code anyOf} models contain the required discriminator.
+     * If they don't contain the required discriminator or the discriminator is the wrong type then an error is thrown.
+     *
+     * @param composedSchemaName The String model name of the composed schema where we are setting the discriminator map
+     * @param discPropName       The String that is the discriminator propertyName in the schema
+     * @param c                  The ComposedSchema that contains the discriminator and oneOf/anyOf schemas
+     * @return the list of {@code oneOf} and {@code anyOf} {@link MappedModel} that need to be added to the discriminator map
+     */
+    public static List<MappedModel> getOneOfAnyOfDescendants(
+            OpenAPI openAPI,
+            String composedSchemaName,
+            String discPropName,
+            Schema c) {
+        ArrayList<List<Schema>> listOfAlternatives = new ArrayList<>();
+        listOfAlternatives.add(c.getOneOf());
+        listOfAlternatives.add(c.getAnyOf());
+        List<MappedModel> descendentSchemas = new ArrayList<>();
+        for (List<Schema> schemaList : listOfAlternatives) {
+            if (schemaList == null) {
+                continue;
+            }
+            for (Schema sc : schemaList) {
+                if (ModelUtils.isNullType(sc)) {
+                    continue;
+                }
+                String ref = sc.get$ref();
+                if (ref == null) {
+                    // for schemas with no ref, it is not possible to build the discriminator map
+                    // because ref is how we get the model name
+                    // we only hit this use case for a schema with inline composed schemas, and one of those
+                    // schemas also has inline composed schemas
+                    // Note: if it is only inline one level, then the inline model resolver will move it into its own
+                    // schema and make it a $ref schema in the oneOf/anyOf location
+                    once(LOGGER).warn(INVALID_SCHEMA_DEFINED, composedSchemaName);
+                }
+                CodegenProperty df = discriminatorFound(openAPI, composedSchemaName, sc, discPropName, new TreeSet<String>());
+                String modelName = ModelUtils.getSimpleRef(ref);
+                if (df == null || !df.isString || !df.required) {
+                    logDiscriminatorSchemaError(df, discPropName, modelName, composedSchemaName);
+                }
+                MappedModel mm = new MappedModel(modelName, modelName, modelName, false);
+                descendentSchemas.add(mm);
+                Schema cs = ModelUtils.getSchema(openAPI, modelName);
+                if (cs == null) { // cannot look up the model based on the name
+                    once(LOGGER).error(FAILED_TO_FIND_SCHEMA, modelName);
+                } else {
+                    discriminatorVendorExtensionValue(sc)
+                            .ifPresent(discriminatorValue -> descendentSchemas.add(new MappedModel(discriminatorValue, modelName, modelName, true)));
+                }
+            }
+        }
+        return descendentSchemas;
+    }
+
+    /**
      * Get the Schema for the discriminator type. Requires special handling due to siblings from OAS 3.1.
      * An example of a sibling is an enum-ref that has its own description. This will lead to the enum being
      * referenced as an allOf that in turn has a ref, rather than a regular ref directly to the enum.
@@ -284,6 +441,34 @@ public class DiscriminatorUtils {
                     composedSchemaName, discPropName, modelName, discPropName, discPropName);
         }
         return null;
+    }
+
+    private static Optional<String> discriminatorVendorExtensionValue(Schema schema) {
+        return Optional.ofNullable(schema)
+                .map(Schema::getExtensions)
+                .map(vendorExtensions -> vendorExtensions.get(X_DISCRIMINATOR_VALUE))
+                .map(discriminatorValue -> (String) discriminatorValue);
+    }
+
+    private static void logDiscriminatorSchemaError(CodegenProperty codegenProperty, String discPropName,
+                                                    String modelName, String composedSchemaName) {
+        String msgSuffix = "";
+        if (codegenProperty == null) {
+            msgSuffix += discPropName + " is missing from the schema, define it as required and type string";
+        } else {
+            if (!codegenProperty.isString) {
+                msgSuffix += "invalid type for " + discPropName + ", set it to string";
+            }
+            if (!codegenProperty.required) {
+                String spacer = "";
+                if (!msgSuffix.isEmpty()) {
+                    spacer = ". ";
+                }
+                msgSuffix += spacer + "invalid optional definition of " + discPropName + ", include it in required";
+            }
+        }
+        once(LOGGER).warn(DEFINES_DISCRIMINATOR_BUT_REFERENCE_IS_INCORRECT,
+                composedSchemaName, discPropName, modelName, msgSuffix);
     }
 
     public static class DiscriminatorData {
