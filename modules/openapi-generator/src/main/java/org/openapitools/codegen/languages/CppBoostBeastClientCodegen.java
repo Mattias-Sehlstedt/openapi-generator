@@ -21,7 +21,11 @@ import static org.openapitools.codegen.utils.StringUtils.camelize;
 
 public class CppBoostBeastClientCodegen extends AbstractCppCodegen {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(CppBoostBeastClientCodegen.class);
+
     public static final String DEFAULT_PACKAGE_NAME = "CppBoostBeastOpenAPIClient";
+    private static final String QUOTATION_MARK = "\"";
+    private static final String EMPTY_QUOTATION_MARKS = "\"\"";
     private static final String X_CODEGEN_DEFAULT_RESPONSE_IS_RETURN_COMPATIBLE =
             "x-codegen-default-response-is-return-compatible";
     private static final String X_CODEGEN_EMPTY_BODY_TOLERANT = "x-codegen-empty-body-tolerant";
@@ -38,7 +42,6 @@ public class CppBoostBeastClientCodegen extends AbstractCppCodegen {
     private static final String X_CODEGEN_QUERY_MAP_DEEP_OBJECT =
             "x-codegen-query-map-deep-object";
     private static final String X_CODEGEN_RESPONSE_RANGE = "x-codegen-response-range";
-    private final Logger LOGGER = LoggerFactory.getLogger(CppBoostBeastClientCodegen.class);
     protected String packageName = DEFAULT_PACKAGE_NAME;
 
     public CodegenType getTag() {
@@ -452,30 +455,13 @@ public class CppBoostBeastClientCodegen extends AbstractCppCodegen {
 
     @Override
     public String toDefaultValue(Schema p) {
-        if (ModelUtils.isStringSchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
-            }
+        if (ModelUtils.isStringSchema(p) ||
+            ModelUtils.isDateSchema(p) ||
+            ModelUtils.isDateTimeSchema(p) ||
+            ModelUtils.isByteArraySchema(p)) {
+            return getDefaultAsEscapedString(p);
         } else if (ModelUtils.isBooleanSchema(p)) {
-            if (p.getDefault() != null) {
-                return p.getDefault().toString();
-            } else {
-                return "false";
-            }
-        } else if (ModelUtils.isDateSchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
-            }
-        } else if (ModelUtils.isDateTimeSchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
-            }
+            return getDefaultAsString(p, "false");
         } else if (ModelUtils.isNumberSchema(p)) {
             if (ModelUtils.isFloatSchema(p)) { // float
                 if (p.getDefault() != null) {
@@ -484,11 +470,7 @@ public class CppBoostBeastClientCodegen extends AbstractCppCodegen {
                     return "0.0f";
                 }
             } else { // double
-                if (p.getDefault() != null) {
-                    return p.getDefault().toString();
-                } else {
-                    return "0.0";
-                }
+                return getDefaultAsString(p, "0.0");
             }
         } else if (ModelUtils.isIntegerSchema(p)) {
             if (ModelUtils.isLongSchema(p)) { // long
@@ -498,17 +480,7 @@ public class CppBoostBeastClientCodegen extends AbstractCppCodegen {
                     return "0L";
                 }
             } else { // integer
-                if (p.getDefault() != null) {
-                    return p.getDefault().toString();
-                } else {
-                    return "0";
-                }
-            }
-        } else if (ModelUtils.isByteArraySchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
+                return getDefaultAsString(p, "0");
             }
         } else if (ModelUtils.isMapSchema(p)) {
             Schema inner = ModelUtils.getAdditionalProperties(p);
@@ -591,5 +563,21 @@ public class CppBoostBeastClientCodegen extends AbstractCppCodegen {
         String originalDefaultValue = var.defaultValue;
         super.updateCodegenPropertyEnum(var);
         var.defaultValue = originalDefaultValue;
+    }
+
+    private String getDefaultAsEscapedString(Schema p) {
+        if (p.getDefault() != null) {
+            return QUOTATION_MARK + p.getDefault().toString() + QUOTATION_MARK;
+        } else {
+            return EMPTY_QUOTATION_MARKS;
+        }
+    }
+
+    private String getDefaultAsString(Schema p, String fallback) {
+        if (p.getDefault() != null) {
+            return p.getDefault().toString();
+        } else {
+            return fallback;
+        }
     }
 }

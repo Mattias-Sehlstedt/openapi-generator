@@ -41,7 +41,11 @@ import static org.openapitools.codegen.utils.StringUtils.underscore;
  * <p>Mustache templates are located in {@code src/main/resources/cpp-oatpp-client/}.
  */
 public class CppOatppClientCodegen extends AbstractCppCodegen {
+
     private final Logger LOGGER = LoggerFactory.getLogger(CppOatppClientCodegen.class);
+
+    private static final String QUOTATION_MARK = "\"";
+    private static final String EMPTY_QUOTATION_MARKS = "\"\"";
 
     protected boolean isAddExternalLibs = true;
     public static final String OPTIONAL_EXTERNAL_LIB = "addExternalLibs";
@@ -341,30 +345,13 @@ public class CppOatppClientCodegen extends AbstractCppCodegen {
 
     @Override
     public String toDefaultValue(Schema p) {
-        if (ModelUtils.isStringSchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
-            }
+        if (ModelUtils.isStringSchema(p) ||
+            ModelUtils.isDateSchema(p) ||
+            ModelUtils.isDateTimeSchema(p) ||
+            ModelUtils.isByteArraySchema(p)) {
+            return getDefaultAsEscapedString(p);
         } else if (ModelUtils.isBooleanSchema(p)) {
-            if (p.getDefault() != null) {
-                return p.getDefault().toString();
-            } else {
-                return "false";
-            }
-        } else if (ModelUtils.isDateSchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
-            }
-        } else if (ModelUtils.isDateTimeSchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
-            }
+            return getDefaultAsString(p, "false");
         } else if (ModelUtils.isNumberSchema(p)) {
             if (ModelUtils.isFloatSchema(p)) { // float
                 if (p.getDefault() != null) {
@@ -381,11 +368,7 @@ public class CppOatppClientCodegen extends AbstractCppCodegen {
                     return "0.0f";
                 }
             } else { // double
-                if (p.getDefault() != null) {
-                    return p.getDefault().toString();
-                } else {
-                    return "0.0";
-                }
+                return getDefaultAsString(p, "0.0");
             }
         } else if (ModelUtils.isIntegerSchema(p)) {
             if (ModelUtils.isLongSchema(p)) { // long
@@ -395,17 +378,7 @@ public class CppOatppClientCodegen extends AbstractCppCodegen {
                     return "0L";
                 }
             } else { // integer
-                if (p.getDefault() != null) {
-                    return p.getDefault().toString();
-                } else {
-                    return "0";
-                }
-            }
-        } else if (ModelUtils.isByteArraySchema(p)) {
-            if (p.getDefault() != null) {
-                return "\"" + p.getDefault().toString() + "\"";
-            } else {
-                return "\"\"";
+                return getDefaultAsString(p, "0");
             }
         } else if (ModelUtils.isMapSchema(p)) {
             String inner = getSchemaType(ModelUtils.getAdditionalProperties(p));
@@ -473,5 +446,21 @@ public class CppOatppClientCodegen extends AbstractCppCodegen {
      */
     public void setAddExternalLibs(boolean value) {
         isAddExternalLibs = value;
+    }
+
+    private String getDefaultAsEscapedString(Schema p) {
+        if (p.getDefault() != null) {
+            return QUOTATION_MARK + p.getDefault().toString() + QUOTATION_MARK;
+        } else {
+            return EMPTY_QUOTATION_MARKS;
+        }
+    }
+
+    private String getDefaultAsString(Schema p, String fallback) {
+        if (p.getDefault() != null) {
+            return p.getDefault().toString();
+        } else {
+            return fallback;
+        }
     }
 }
