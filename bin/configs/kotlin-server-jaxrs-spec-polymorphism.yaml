@@ -1,0 +1,11 @@
+generatorName: kotlin-server
+outputDir: samples/server/others/kotlin-server/jaxrs-spec-polymorphism
+library: jaxrs-spec
+inputSpec: modules/openapi-generator/src/test/resources/3_1/polymorphism-and-discriminator.yaml
+templateDir: modules/openapi-generator/src/main/resources/kotlin-server
+additionalProperties:
+  interfaceOnly: "true"
+  sortParamsByRequiredFlag: "true"
+  sortModelPropertiesByRequiredFlag: "true"
+  useJakartaEe: "true"
+  useBeanValidation: "true"

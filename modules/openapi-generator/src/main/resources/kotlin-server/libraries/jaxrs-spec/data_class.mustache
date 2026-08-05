@@ -29,6 +29,9 @@ import java.io.Serializable
 {{/isDeprecated}}
 {{>additionalModelTypeAnnotations}}
 
+{{#discriminator}}
+{{>typeInfoAnnotation}}
+{{/discriminator}}
 {{#nonPublicApi}}internal {{/nonPublicApi}}{{#discriminator}}interface{{/discriminator}}{{^discriminator}}data class{{/discriminator}} {{classname}}{{^discriminator}} (
 
 {{#allVars}}
