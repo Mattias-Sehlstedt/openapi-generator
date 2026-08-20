@@ -2751,7 +2751,7 @@ public class ModelUtils {
     }
 
     /**
-     * Copy meta data (e.g. description, default, examples, etc) from one schema to another.
+     * Copy metadata (e.g. description, default, examples, etc.) from one schema to another.
      *
      * @param from From schema
      * @param to   To schema
@@ -2808,6 +2808,22 @@ public class ModelUtils {
     }
 
     /**
+     * Returns true if the schema contain only a ref that points to a {@code metadata schema},
+     * or if the schema itself is a {@code metadata schema}.
+     * A {@code metadata schema} is for example a schema that only has a `description` without any `properties` or `$ref` defined.
+     *
+     * @param schema the schema
+     * @return if the schema is only metadata and not an actual type
+     */
+    public static boolean isMetadataOnlySchema(OpenAPI openAPI, Schema schema) {
+        if (isMetadataOnlySchema(schema)) {
+            return true;
+        }
+        boolean isRefOnlySchema = schema.get$ref() != null && !hasStructuralFields(schema);
+        return isRefOnlySchema && isMetadataOnlySchema(getReferencedSchema(openAPI, schema));
+    }
+
+    /**
      * Returns true if a schema is only metadata and not an actual type.
      * For example, a schema that only has a `description` without any `properties` or `$ref` defined.
      *
@@ -2815,21 +2831,31 @@ public class ModelUtils {
      * @return if the schema is only metadata and not an actual type
      */
     public static boolean isMetadataOnlySchema(Schema schema) {
-        return !(schema.get$ref() != null ||
-                schema.getProperties() != null ||
-                schema.getType() != null ||
-                schema.getAdditionalProperties() != null ||
-                schema.getAllOf() != null ||
-                schema.getAnyOf() != null ||
-                schema.getOneOf() != null ||
-                schema.getPrefixItems() != null ||
-                schema.getItems() != null ||
-                schema.getTypes() != null ||
-                schema.getPatternProperties() != null ||
-                schema.getContains() != null ||
-                schema.get$dynamicAnchor() != null ||
-                schema.get$anchor() != null ||
-                schema.getContentSchema() != null);
+        return !(schema.get$ref() != null || hasStructuralFields(schema));
+    }
+
+    /**
+     * Returns true if a schema has any structural field. Note that {@code $ref} is not considered structural.
+     * For example, a schema that only has a `description` without any `properties` defined.
+     *
+     * @param schema the schema
+     * @return if the schema has any structural field
+     */
+    public static boolean hasStructuralFields(Schema schema) {
+        return schema.getProperties() != null ||
+                 schema.getType() != null ||
+                 schema.getAdditionalProperties() != null ||
+                 schema.getAllOf() != null ||
+                 schema.getAnyOf() != null ||
+                 schema.getOneOf() != null ||
+                 schema.getPrefixItems() != null ||
+                 schema.getItems() != null ||
+                 schema.getTypes() != null ||
+                 schema.getPatternProperties() != null ||
+                 schema.getContains() != null ||
+                 schema.get$dynamicAnchor() != null ||
+                 schema.get$anchor() != null ||
+                 schema.getContentSchema() != null;
     }
 
     /**

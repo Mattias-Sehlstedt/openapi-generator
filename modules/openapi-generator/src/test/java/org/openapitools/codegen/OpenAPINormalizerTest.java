@@ -133,8 +133,7 @@ public class OpenAPINormalizerTest {
     }
 
     @Test
-    public void testOpenAPINormalizerRefactorAllofWithMetadataOnlySchemas() {
-        // to test the rule REF_AS_PARENT_IN_ALLOF
+    public void testOpenAPINormalizerRefactorAllOfWithMetadataOnlySchemas() {
         OpenAPI openAPI = TestUtils.parseSpec("src/test/resources/3_0/allof_with_metadata_only_schemas.yaml");
 
         Schema schema = openAPI.getComponents().getSchemas().get("ReferenceNumber");
@@ -149,6 +148,25 @@ public class OpenAPINormalizerTest {
         assertEquals(schema2.getAllOf().size(), 1);
         assertEquals(schema2.getExample(), "IEAN1234");
         assertEquals(((Schema) schema2.getAllOf().get(0)).get$ref(), "#/components/schemas/IEAN8");
+    }
+
+    @Test
+    public void testOpenAPINormalizerRefactorAllOfWithMetadataOnlyAndInlineSchema() {
+        OpenAPI openAPI = TestUtils.parseSpec("src/test/resources/3_0/allof_with_metadata_only_schemas.yaml");
+
+        Schema schema = openAPI.getComponents().getSchemas().get("StringSchemaWithDescription");
+        assertEquals(((Schema) schema.getProperties().get("foo")).getAllOf().size(), 2);
+
+        Map<String, String> options = new HashMap<>();
+        OpenAPINormalizer openAPINormalizer = new OpenAPINormalizer(openAPI, options);
+        openAPINormalizer.normalize();
+
+        Schema normalizedSchema = openAPI.getComponents().getSchemas().get("StringSchemaWithDescription");
+        Schema propertySchema = (Schema) normalizedSchema.getProperties().get("foo");
+        assertEquals(propertySchema.getAllOf().size(), 1);
+        Schema propertyAllOfSchema = (Schema) propertySchema.getAllOf().get(0);
+        assertEquals(propertyAllOfSchema.getType(), "string");
+        assertEquals(propertySchema.getDescription(), "this is foo");
     }
 
     @Test

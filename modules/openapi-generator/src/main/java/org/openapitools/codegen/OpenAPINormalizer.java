@@ -43,8 +43,7 @@ import java.util.stream.Collectors;
 import static org.openapitools.codegen.CodegenConstants.*;
 import static org.openapitools.codegen.utils.EnumUtils.ANY_OF;
 import static org.openapitools.codegen.utils.EnumUtils.ONE_OF;
-import static org.openapitools.codegen.utils.ModelUtils.isOneOfOfConsts;
-import static org.openapitools.codegen.utils.ModelUtils.simplifyOneOfAnyOfWithOnlyOneNonNullSubSchema;
+import static org.openapitools.codegen.utils.ModelUtils.*;
 import static org.openapitools.codegen.utils.StringUtils.getUniqueString;
 
 public class OpenAPINormalizer {
@@ -86,7 +85,6 @@ public class OpenAPINormalizer {
 
     // when set to true, oneOf is removed and is converted into mappings in a discriminator mapping
     final String REPLACE_ONE_OF_BY_DISCRIMINATOR_MAPPING = "REPLACE_ONE_OF_BY_DISCRIMINATOR_MAPPING";
-
 
     // when set to true, oneOf/anyOf with either string or enum string as sub schemas will be simplified
     // to just string
@@ -1204,16 +1202,17 @@ public class OpenAPINormalizer {
         }
 
         // Check if there are metadata schemas.
-        // For example, there may be an `description` only schema that is used to override the descrption.
+        // For example, there may be a `description` only schema that is used to override the descrption.
         List<Schema> nonMetadataOnlySchemas = new ArrayList<>();
         List<Schema> metadataOnlySchemas = new ArrayList<>();
 
         for (Object s: schema.getAllOf()) {
             if (s instanceof Schema) {
-                if (ModelUtils.isMetadataOnlySchema((Schema) s)) {
-                    metadataOnlySchemas.add((Schema) s);
+                Schema allOfSchema = (Schema) s;
+                if (ModelUtils.isMetadataOnlySchema(openAPI, allOfSchema)) {
+                    metadataOnlySchemas.add(getReferencedSchema(openAPI, allOfSchema));
                 } else {
-                    nonMetadataOnlySchemas.add((Schema) s);
+                    nonMetadataOnlySchemas.add(allOfSchema);
                 }
             }
         }

@@ -45,3 +45,15 @@ components:
             - $ref: '#/components/schemas/ProductType'
             - description: 'this is foo'
             - example: 'this is bar'
+    StringSchemaWithDescription:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        foo:
+          allOf:
+            - $ref: '#/components/schemas/Description'
+            - type: string
+    Description:
+      description: 'this is foo'
