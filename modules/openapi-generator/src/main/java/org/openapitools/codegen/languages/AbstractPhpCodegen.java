@@ -24,11 +24,7 @@ import lombok.Setter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.openapitools.codegen.*;
-import org.openapitools.codegen.model.EnumVarMap;
-import org.openapitools.codegen.model.ModelMap;
-import org.openapitools.codegen.model.ModelsMap;
-import org.openapitools.codegen.model.OperationMap;
-import org.openapitools.codegen.model.OperationsMap;
+import org.openapitools.codegen.model.*;
 import org.openapitools.codegen.utils.ModelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +35,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.openapitools.codegen.CodegenConstants.*;
+import static org.openapitools.codegen.CodegenConstants.X_ENUM_DESCRIPTIONS;
+import static org.openapitools.codegen.CodegenConstants.X_ENUM_VARNAMES;
 import static org.openapitools.codegen.model.EnumVarMap.ENUM_DESCRIPTION;
 import static org.openapitools.codegen.model.EnumVarMap.ENUM_NAME;
 import static org.openapitools.codegen.utils.CamelizeOption.LOWERCASE_FIRST_LETTER;
@@ -50,6 +47,8 @@ import static org.openapitools.codegen.utils.StringUtils.underscore;
 public abstract class AbstractPhpCodegen extends DefaultCodegen implements CodegenConfig {
 
     private final Logger LOGGER = LoggerFactory.getLogger(AbstractPhpCodegen.class);
+
+    private static final String ANY_TYPE_TYPE = "mixed";
 
     public static final String VARIABLE_NAMING_CONVENTION = "variableNamingConvention";
     public static final String PACKAGE_NAME = "packageName";
@@ -182,7 +181,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
                         "array",
                         "\\DateTime",
                         "\\SplFileObject",
-                        "mixed",
+                        ANY_TYPE_TYPE,
                         "number",
                         "void",
                         "byte")
@@ -219,7 +218,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         typeMapping.put("ByteArray", "string");
         typeMapping.put("UUID", "string");
         typeMapping.put("URI", "string");
-        typeMapping.put("AnyType", "mixed");
+        typeMapping.put("AnyType", ANY_TYPE_TYPE);
 
         cliOptions.add(new CliOption(CodegenConstants.MODEL_PACKAGE, CodegenConstants.MODEL_PACKAGE_DESC));
         cliOptions.add(new CliOption(CodegenConstants.API_PACKAGE, CodegenConstants.API_PACKAGE_DESC));
@@ -597,8 +596,6 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
             return schemaKeyToModelNameCache.get(origName);
         }
 
-        name = toGenericName(name);
-
         // add prefix and/or suffix only if name does not start with \ (e.g. \DateTime)
         if (!name.matches("^\\\\.*")) {
             if (!StringUtils.isEmpty(modelNamePrefix)) {
@@ -613,6 +610,23 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         // camelize the model name
         // phone_number => PhoneNumber
         String camelizedName = camelize(name);
+
+        if (isReservedWord(camelizedName)) {
+            final String modelName = "Model" + camelizedName; // e.g. return => ModelReturn (after camelize)
+            schemaKeyToModelNameCache.put(origName, modelName);
+            LOGGER.warn("{} (reserved word) cannot be used as model name. Renamed to {}", camelizedName, modelName);
+            return modelName;
+        }
+
+        // model name starts with number
+        if (camelizedName.matches("^\\d.*")) {
+            final String modelName = "Model" + camelizedName; // e.g. 200Response => Model200Response (after camelize)
+            schemaKeyToModelNameCache.put(origName, modelName);
+            LOGGER.warn("{} (model name starts with number) cannot be used as model name. Renamed to {}", camelizedName,
+                    modelName);
+            return modelName;
+        }
+
         schemaKeyToModelNameCache.put(origName, camelizedName);
         return camelizedName;
     }
@@ -1085,7 +1099,23 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         for (Schema s : schemas) {
             types.add(getTypeDeclaration(s));
         }
+        types = removeAnyTypeIfThereIsAStricterType(types);
 
         return String.join("&", types);
+    }
+
+    /**
+     * If the list of types contains ANY_TYPE_TYPE and at least one other type, remove ANY_TYPE_TYPE from the list.
+     * This since the other type takes precedence in an allOf since it is the strictest restriction.
+     * @param types the types
+     * @return the types with the strictest type
+     */
+    private List<String> removeAnyTypeIfThereIsAStricterType(List<String> types) {
+        List<String> typesWithoutAnyType = new ArrayList<>(types);
+        typesWithoutAnyType.removeIf(type -> type.equals(ANY_TYPE_TYPE));
+        if (!typesWithoutAnyType.isEmpty()) {
+            return typesWithoutAnyType;
+        }
+        return types;
     }
 }

@@ -70,7 +70,7 @@ public class PhpNextgenClientCodegenTest {
     }
 
     @Test
-    public void testAdditionalPropertiesPutForConfigValuesWithFalseValue() throws Exception {
+    public void testAdditionalPropertiesPutForConfigValuesWithFalseValue() {
         final PhpNextgenClientCodegen codegen = new PhpNextgenClientCodegen();
 
         codegen.additionalProperties().put(PhpNextgenClientCodegen.SUPPORT_STREAMING, false);
@@ -83,7 +83,7 @@ public class PhpNextgenClientCodegenTest {
     }
 
     @Test
-    public void testAdditionalPropertiesPutForConfigValuesWithTrueValue() throws Exception {
+    public void testAdditionalPropertiesPutForConfigValuesWithTrueValue() {
         final PhpNextgenClientCodegen codegen = new PhpNextgenClientCodegen();
 
         codegen.additionalProperties().put(PhpNextgenClientCodegen.SUPPORT_STREAMING, true);
@@ -707,6 +707,7 @@ public class PhpNextgenClientCodegenTest {
         }
         return next < 0 ? content.substring(start) : content.substring(start, next);
     }
+
     @Test
     public void testDateTimeLengthValidationIsNotGenerated() throws Exception {
         File output = Files.createTempDirectory("test").toFile().getCanonicalFile();
@@ -733,5 +734,28 @@ public class PhpNextgenClientCodegenTest {
         Assert.assertFalse(modelPhp.contains("mb_strlen($starts_at)"), modelPhp);
         Assert.assertTrue(modelPhp.contains("mb_strlen($this->container['title']) > 10"), modelPhp);
         Assert.assertTrue(modelPhp.contains("mb_strlen($title) > 10"), modelPhp);
+    }
+
+    @Test
+    public void testSchemaWithTypeOnlyDefinedInAllOfAndAMetadataSchema() throws IOException {
+        File output = Files.createTempDirectory("test").toFile().getCanonicalFile();
+        output.deleteOnExit();
+
+        OpenAPI openAPI = new OpenAPIParser()
+                .readLocation("src/test/resources/3_0/allof_with_metadata_only_schemas.yaml", null, new ParseOptions())
+                .getOpenAPI();
+
+        codegen.setOutputDir(output.getAbsolutePath());
+        ClientOptInput input = new ClientOptInput()
+                .openAPI(openAPI)
+                .config(codegen);
+
+        DefaultGenerator generator = new DefaultGenerator();
+        Map<String, File> files = generator.opts(input).generate().stream()
+                .collect(Collectors.toMap(File::getName, Function.identity()));
+
+        String modelPhp = String.join("\n", Files.readAllLines(files.get("AllOfMetadataDescriptionSchemaAndStringTypeSchema.php").toPath()));
+
+        Assert.assertTrue(modelPhp.contains("'foo' => 'string'"), modelPhp);
     }
 }

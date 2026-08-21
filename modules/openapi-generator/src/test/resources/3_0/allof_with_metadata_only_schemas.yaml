@@ -14,16 +14,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProductType'
+                $ref: '#/components/schemas/3d-position'
 components:
   schemas:
-    ProductType:
+    3d-position:
       type: object
       required:
         - referenceNumber
       properties:
         referenceNumber:
             $ref: "#/components/schemas/ReferenceNumber"
+        position:
+          type: object
+          properties:
+            x:
+              type: integer
+            y:
+              type: integer
+            z:
+              type: integer
     ReferenceNumber:
       allOf:
         - $ref: "#/components/schemas/IEAN8"
@@ -42,6 +51,17 @@ components:
           format: int64
         foo:
           allOf:
-            - $ref: '#/components/schemas/ProductType'
             - description: 'this is foo'
             - example: 'this is bar'
+    AllOfMetadataDescriptionSchemaAndStringTypeSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        foo:
+          allOf:
+            - $ref: '#/components/schemas/Description'
+            - type: string
+    Description:
+      description: 'this is foo'
