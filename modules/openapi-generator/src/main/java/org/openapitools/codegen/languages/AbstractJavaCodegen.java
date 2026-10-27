@@ -74,7 +74,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static org.openapitools.codegen.CodegenConstants.*;
+import static org.openapitools.codegen.CodegenConstants.USE_DEDUCTION_FOR_ONE_OF_INTERFACES;
+import static org.openapitools.codegen.CodegenConstants.X_IMPLEMENTS;
+import static org.openapitools.codegen.CodegenConstants.X_IS_JACKSON_OPTIONAL_NULLABLE;
 import static org.openapitools.codegen.utils.CamelizeOption.*;
 import static org.openapitools.codegen.utils.EnumUtils.getEnumValues;
 import static org.openapitools.codegen.utils.ModelUtils.getSchemaItems;
@@ -2678,34 +2680,28 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
             return codegenModel;
         }
 
-        // Get the properties for the parent and child models
-        final List<CodegenProperty> parentModelCodegenProperties = parentCodegenModel.vars;
-        List<CodegenProperty> codegenProperties = codegenModel.vars;
-
-        // Iterate over all of the parent model properties
-        boolean removedChildEnum = false;
-        for (CodegenProperty parentModelCodegenProperty : parentModelCodegenProperties) {
-            // Look for enums
+        for (CodegenProperty parentModelCodegenProperty : parentCodegenModel.vars) {
             if (parentModelCodegenProperty.isEnum) {
-                // Now that we have found an enum in the parent class,
-                // and search the child class for the same enum.
-                Iterator<CodegenProperty> iterator = codegenProperties.iterator();
-                while (iterator.hasNext()) {
-                    CodegenProperty codegenProperty = iterator.next();
-                    if (codegenProperty.isEnum && codegenProperty.equals(parentModelCodegenProperty)) {
-                        // We found an enum in the child class that is
-                        // a duplicate of the one in the parent, so remove it.
-                        iterator.remove();
-                        removedChildEnum = true;
-                    }
-                }
+                reconcileInlineEnum(parentModelCodegenProperty, codegenModel);
             }
         }
-
-        if (removedChildEnum) {
-            codegenModel.vars = codegenProperties;
-        }
+        // keep the flags used by the templates in sync with the (possibly) reduced vars
+        codegenModel.hasVars = !codegenModel.vars.isEmpty();
+        codegenModel.hasEnums = codegenModel.vars.stream().anyMatch(p -> p.isEnum);
         return codegenModel;
+    }
+
+    private static void reconcileInlineEnum(CodegenProperty parentCodegenProperty, CodegenModel codegenModel) {
+        ListIterator<CodegenProperty> iterator = codegenModel.vars.listIterator();
+        while (iterator.hasNext()) {
+            CodegenProperty codegenProperty = iterator.next();
+            if (!codegenProperty.isEnum || !codegenProperty.name.equals(parentCodegenProperty.name)) {
+                continue;
+            }
+            if (codegenProperty.equals(parentCodegenProperty)) {
+                iterator.remove();
+            }
+        }
     }
 
     private static String sanitizePackageName(String packageName) {

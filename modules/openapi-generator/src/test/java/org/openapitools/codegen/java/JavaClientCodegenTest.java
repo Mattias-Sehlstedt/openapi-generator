@@ -2856,6 +2856,29 @@ public class JavaClientCodegenTest {
     }
 
     @Test
+    public void testCatDropsInlineEnumAndUsesParentEnum() {
+        final Path output = newTempFolder();
+        final CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName(JAVA_GENERATOR)
+                .setLibrary(JavaClientCodegen.NATIVE)
+                .setInputSpec("src/test/resources/3_0/inherited_inline_enum.yaml")
+                .setOutputDir(output.toString().replace("\\", "/"));
+
+        List<File> files = new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+        validateJavaSourceFiles(files);
+
+        Path modelDir = output.resolve("src/main/java/org/openapitools/client/model");
+
+        // Animal keeps the enum definition.
+        assertFileContains(modelDir.resolve("Animal.java"),
+                "public enum StatusEnum", "ACTIVE(String.valueOf(\"ACTIVE\"))", "INACTIVE(String.valueOf(\"INACTIVE\"))");
+
+        // Cat extends Animal and must not redeclare a duplicate enum.
+        assertFileContains(modelDir.resolve("Cat.java"), "public class Cat extends Animal");
+        assertFileNotContains(modelDir.resolve("Cat.java"), "public enum StatusEnum");
+    }
+
+    @Test
     public void testRestTemplateWithUseBeanValidationEnabled() {
         final Path output = newTempFolder();
         final CodegenConfigurator configurator = new CodegenConfigurator()
