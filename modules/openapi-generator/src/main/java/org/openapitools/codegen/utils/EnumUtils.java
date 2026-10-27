@@ -20,6 +20,8 @@ public class EnumUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnumUtils.class);
     private static final String ENUM_VENDOR_EXTENSIONS_REMOVED =
             "Enum vendor extensions removed from composite schema due to merge. This may cause loss of information if the enum values are not aligned.";
+    private static final String UNEXPECTED_ENUM_BROADENING =
+            "Unexpected enum broadening when checking if child values %s are a subset of the parent values %s.";
 
     public static final String BUNGIE_X_ENUM_VALUES = "x-enum-values";
     private static final String BUNGIE_ENUM_DESCRIPTION = "description";
@@ -156,6 +158,32 @@ public class EnumUtils {
             enumVars.add(enumVar);
         }
         return enumVars;
+    }
+
+    /**
+     * A child (allOf) enum "narrows" a parent one when the child's allowed values are a subset of the parent's
+     * allowed values.
+     *
+     * @param parentAllowableValues the allowableValues map of the parent enum property
+     * @param childAllowableValues  the allowableValues map of the child enum property
+     * @return true if the child enum values narrow the parent enum values
+     */
+    public static boolean isNarrowedEnum(Map<String, Object> parentAllowableValues,
+                                         Map<String, Object> childAllowableValues) {
+        if (!hasEnumValues(parentAllowableValues) || !hasEnumValues(childAllowableValues)) {
+            return false;
+        }
+        Object parentValues = getEnumValues(parentAllowableValues);
+        Object childValues = getEnumValues(childAllowableValues);
+        if (!(parentValues instanceof Collection) || !(childValues instanceof Collection)) {
+            return false;
+        }
+        if (!new HashSet<>((Collection<?>) parentValues).containsAll((Collection<?>) childValues)) {
+            String unexpectedEnumBroadening = String.format(Locale.ROOT, UNEXPECTED_ENUM_BROADENING, childValues, parentValues);
+            once(LOGGER).warn(unexpectedEnumBroadening);
+            return false;
+        }
+        return true;
     }
 
     /**
