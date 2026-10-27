@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: Narrowed discriminator enum reproduction
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    ItemDefinition:
+      type: object
+      required: [type]
+      discriminator:
+        propertyName: type
+        mapping:
+          HTML_COMMENT: '#/components/schemas/HtmlComment'
+          TEXTFIELD: '#/components/schemas/Textfield'
+      properties:
+        type:
+          type: string
+          enum: [HTML_COMMENT, TEXTFIELD]
+    HtmlComment:
+      allOf:
+        - $ref: '#/components/schemas/ItemDefinition'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum: [HTML_COMMENT]
+    Textfield:
+      allOf:
+        - $ref: '#/components/schemas/ItemDefinition'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum: [TEXTFIELD]
+

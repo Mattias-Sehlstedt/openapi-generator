@@ -963,14 +963,15 @@ public class DefaultCodegenTest {
     }
 
     @Test
-    public void testInheritedInlineEnumThatIsNarrowedIsKeptInChildModel() {
+    public void testInheritedInlineEnumThatIsNarrowedIsDroppedFromChildModel() {
         final DefaultCodegen codegen = new DefaultCodegen();
         CodegenProperty animalType = inlineEnumProperty("type", "TypeEnum", "cat", "dog");
         CodegenModel animal = modelWithVars("Animal", animalType);
 
         CodegenProperty dogTypeBeforeReconcile = animalType.clone();
+        CodegenProperty dogBarkVolume = property("barkVolume");
         dogTypeBeforeReconcile.set_enum(Collections.singletonList("dog"));
-        CodegenModel dog = modelWithVars("Dog", dogTypeBeforeReconcile);
+        CodegenModel dog = modelWithVars("Dog", dogTypeBeforeReconcile, dogBarkVolume);
 
         assertTrue(animalType.isEnum);
         assertEquals(animalType.get_enum(), Arrays.asList("cat", "dog"));
@@ -982,11 +983,9 @@ public class DefaultCodegenTest {
 
         dog = codegen.reconcileInlineEnums(dog, animal);
 
-        // Narrowed enum is not identical to parent enum, so child property must be retained.
-        CodegenProperty dogTypeAfterReconcile = varNamed(dog, "type");
-        assertTrue(dogTypeAfterReconcile.isEnum);
-        assertEquals(dogTypeAfterReconcile.get_enum(), Collections.singletonList("dog"));
-        assertThat(dog.vars.stream().filter(property -> "type".equals(property.name)).count()).isEqualTo(1);
+        // After reconciliation, the narrowed child property is dropped from vars.
+        assertThat(getNames(dog.vars)).containsExactly("barkVolume");
+        assertThat(dog.vars.stream().filter(property -> "type".equals(property.name)).count()).isEqualTo(0);
     }
 
     @Test
@@ -5823,6 +5822,7 @@ public class DefaultCodegenTest {
         property.isEnum = true;
         property.enumName = enumName;
         property.set_enum(Arrays.asList(enumValues));
+        property.allowableValues = Map.of(EnumVarMap.ENUM_VALUES, Arrays.asList(enumValues));
         return property;
     }
 

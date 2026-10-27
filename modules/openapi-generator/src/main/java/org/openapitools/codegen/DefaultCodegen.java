@@ -68,6 +68,7 @@ import org.openapitools.codegen.serializer.SerializerUtils;
 import org.openapitools.codegen.templating.MustacheEngineAdapter;
 import org.openapitools.codegen.templating.mustache.*;
 import org.openapitools.codegen.utils.DiscriminatorUtils;
+import org.openapitools.codegen.utils.EnumUtils;
 import org.openapitools.codegen.utils.ExamplesUtils;
 import org.openapitools.codegen.utils.ModelUtils;
 import org.openapitools.codegen.utils.OneOfImplementorAdditionalData;
@@ -3424,7 +3425,10 @@ public class DefaultCodegen implements CodegenConfig {
         Iterator<CodegenProperty> iterator = codegenProperties.iterator();
         while (iterator.hasNext()) {
             CodegenProperty codegenProperty = iterator.next();
-            if (codegenProperty.isEnum && codegenProperty.equals(parentModelCodegenProperty)) {
+            if (!codegenProperty.isEnum) {
+                continue;
+            }
+            if (codegenProperty.equals(parentModelCodegenProperty) || EnumUtils.isNarrowedEnum(parentModelCodegenProperty.allowableValues, codegenProperty.allowableValues)) {
                 iterator.remove();
             }
         }

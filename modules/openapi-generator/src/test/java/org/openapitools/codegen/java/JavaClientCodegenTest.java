@@ -2879,7 +2879,7 @@ public class JavaClientCodegenTest {
     }
 
     @Test
-    public void testInheritedInlineEnumThatIsNarrowedIsKeptInChildModel() {
+    public void testInheritedInlineEnumThatIsNarrowedIsDroppedFromChildModel() {
         final Path output = newTempFolder();
         final CodegenConfigurator configurator = new CodegenConfigurator()
                 .setGeneratorName(JAVA_GENERATOR)
@@ -2896,10 +2896,9 @@ public class JavaClientCodegenTest {
         assertFileContains(modelDir.resolve("Animal.java"),
                 "public enum TypeEnum", "CAT(String.valueOf(\"cat\"))", "DOG(String.valueOf(\"dog\"))");
 
-        // narrowed child enum must be kept in child model
-        assertFileContains(modelDir.resolve("Dog.java"),
-                "public class Dog extends Animal", "public enum TypeEnum", "DOG(String.valueOf(\"dog\"))", "private TypeEnum type");
-        assertFileNotContains(modelDir.resolve("Dog.java"), "CAT(String.valueOf(\"cat\"))");
+        // narrowed child enum is dropped from child model, and instead inherited from the parent model
+        assertFileContains(modelDir.resolve("Dog.java"), "public class Dog extends Animal", "private Integer barkVolume;");
+        assertFileNotContains(modelDir.resolve("Dog.java"), "public enum TypeEnum");
     }
 
     @Test
