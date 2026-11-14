@@ -46,6 +46,16 @@
           }
         }
       },
+      "CatOrDog": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Cat"
+          },
+          {
+            "$ref": "#/components/schemas/Dog"
+          }
+        ]
+      },
       "Dog": {
         "type" : "object",
         "title": "Dog",
@@ -53,6 +63,10 @@
           "type" : {
             "type" : "string",
             "enum" : [ "dog" ]
+          },
+          "breed" : {
+            "type" : "string",
+            "enum" : [ "labrador", "beagle" ]
           }
         },
         "required" : [ "type" ]
@@ -64,6 +78,10 @@
           "type" : {
             "type" : "string",
             "enum" : [ "cat" ]
+          },
+          "breed" : {
+            "type" : "string",
+            "enum" : [ "siamese", "persian" ]
           }
         },
         "required" : [ "type" ]

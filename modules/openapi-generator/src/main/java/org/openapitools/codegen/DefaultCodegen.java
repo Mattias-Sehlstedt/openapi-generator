@@ -3247,22 +3247,16 @@ public class DefaultCodegen implements CodegenConfig {
      * that schema for items like enum include all possible values.
      */
     private void mergeProperties(Map<String, Schema> existingProperties, Map<String, Schema> newProperties) {
-        // https://github.com/OpenAPITools/openapi-generator/issues/12545
-        if (null != existingProperties && null != newProperties) {
-            Schema existingType = existingProperties.get("type");
-            Schema newType = newProperties.get("type");
-            newProperties.forEach((key, value) ->
-                    existingProperties.put(key, ModelUtils.cloneSchema(value, specVersionGreaterThanOrEqualTo310(openAPI)))
-            );
-            if (null != existingType && null != newType && null != newType.getEnum() && !newType.getEnum().isEmpty()) {
-                for (Object e : newType.getEnum()) {
-                    // ensure all interface enum types are added to schema
-                    if (null != existingType.getEnum() && !existingType.getEnum().contains(e)) {
-                        existingType.addEnumItemObject(e);
-                    }
+        if (existingProperties != null && newProperties != null) {
+            newProperties.forEach((key, value) -> {
+                Schema existingValue = existingProperties.get(key);
+                Schema merged = ModelUtils.cloneSchema(value, specVersionGreaterThanOrEqualTo310(openAPI));
+
+                if (existingValue != null && isEnumSchema(existingValue) && value != null && isEnumSchema(value)) {
+                    merged.setEnum(mergeEnumValues(existingValue.getEnum(), value.getEnum()));
                 }
-                existingProperties.put("type", existingType);
-            }
+                existingProperties.put(key, merged);
+            });
         }
     }
 
